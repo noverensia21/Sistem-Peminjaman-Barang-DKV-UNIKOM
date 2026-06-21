@@ -7,20 +7,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background: #f5f7fb; }
-        
-        /* Ubah warna ke Abu Muda dan Tengah */
-        .hero {
-            background: linear-gradient(135deg, #e0e0e0, #f8f9fa); /* Gradasi Abu Muda */
-            color: #333; /* Teks jadi gelap agar kontras dengan abu */
-            padding: 40px; 
-            border-radius: 20px; 
-            margin-top: 20px;
-            text-align: center; /* Teks ke tengah */
-        }
-        
-        /* Penyesuaian logo dan tombol */
+        .hero { background: linear-gradient(135deg, #e0e0e0, #f8f9fa); color: #333; padding: 40px; border-radius: 20px; margin-top: 20px; text-align: center; }
         .logo-instansi { max-height: 100px; margin-bottom: 20px; }
-        
         .stat-card { border: none; border-radius: 15px; }
         .card-barang { transition: 0.3s; border: none; border-radius: 15px; }
         .card-barang:hover { transform: translateY(-5px); }
@@ -35,23 +23,18 @@
 <div class="container">
     <div class="hero shadow">
         <img src="logo.png" alt="Logo" class="logo-instansi" onerror="this.style.display='none'">
-        
         <h1 class="fw-bold">📦 Sistem Peminjaman Barang</h1>
         <p>Monitoring barang yang sedang dipinjam dan yang sudah dikembalikan.</p>
         <div class="mt-4">
-            <a href="https://docs.google.com/forms/d/e/1FAIpQLSdWVkBjDQyUnuZsWcCkPrHbrY3XwQiHQaXQjMHzoN03S_UQUQ/viewform?usp=header" target="_blank" class="btn btn-success btn-lg me-2 mb-2">
-                Peminjaman Barang
-            </a>
-            <a href="https://docs.google.com/forms/d/e/1FAIpQLSfVjQBc-9G7v04T-cLxNGnRKU93fMZnW38T9FP_u_RNmvyoyg/viewform?usp=publish-editor" target="_blank" class="btn btn-danger btn-lg mb-2">
-                Pengembalian Barang
-            </a>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSdWVkBjDQyUnuZsWcCkPrHbrY3XwQiHQaXQjMHzoN03S_UQUQ/viewform?usp=header" target="_blank" class="btn btn-success btn-lg me-2 mb-2">Peminjaman Barang</a>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSfVjQBc-9G7v04T-cLxNGnRKU93fMZnW38T9FP_u_RNmvyoyg/viewform?usp=publish-editor" target="_blank" class="btn btn-danger btn-lg mb-2">Pengembalian Barang</a>
         </div>
     </div>
 
     <div class="row mt-4">
         <div class="col-md-4 mb-3">
             <div class="card stat-card shadow">
-                <div class="card-body text-center"><h2 id="totalData">0</h2>Total Data</div>
+                <div class="card-body text-center"><h2 id="totalData">0</h2>Total Peminjaman</div>
             </div>
         </div>
         <div class="col-md-4 mb-3">
@@ -68,7 +51,7 @@
 
     <div class="row mb-3">
         <div class="col-md-6 mb-2">
-            <input type="text" id="searchInput" class="form-control" placeholder="Cari barang atau peminjam...">
+            <input type="text" id="searchInput" class="form-control" placeholder="Cari barang, peminjam, atau ID Peminjaman...">
         </div>
         <div class="col-md-6 mb-2">
             <select id="statusFilter" class="form-select">
@@ -80,16 +63,31 @@
     </div>
 
     <div class="row" id="barangContainer">
-        <div class="col-12">
-            <div class="alert alert-info">Menunggu data dari Google Sheet...</div>
-        </div>
+        <div class="col-12"><div class="alert alert-info">Menunggu data dari Google Sheet...</div></div>
     </div>
 
     <div class="footer">FAKULTAS DESAIN UNIKOM &copy; 2026</div>
 </div>
 
+<!-- Modal Gambar -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="imageModalLabel">Preview Gambar</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center bg-dark rounded-bottom">
+                <img src="" id="modalImage" class="img-fluid rounded shadow" style="max-height: 75vh; object-fit: contain;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbybQYAk5dre4VeoHcYJUuGXU-addsTvNEyxhOVgfIAPHYR1NZr44nZYEhUODbVOM-Evqg/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxcTLQTfHW4qCTkK8PduI32vnmEMZeiuKoPvy_k_FJ9lGTVeSthIXF1Wdb3WeIbGzGn/exec";
     let semuaData = [];
     let imageModalInstance = null;
 
@@ -120,6 +118,15 @@
         document.getElementById("totalKembali").innerText = kembali;
     }
 
+    // Fungsi warna dinamis untuk kondisi barang
+    function getKondisiColor(teks) {
+        if (!teks || teks === '-') return 'text-secondary';
+        const t = teks.toUpperCase();
+        if (t.includes('BAIK') || t.includes('AMAN')) return 'text-success';
+        if (t.includes('KURANG') || t.includes('RUSAK') || t.includes('ERROR')) return 'text-danger';
+        return 'text-warning';
+    }
+
     function renderData(data) {
         const container = document.getElementById("barangContainer");
         if (!data.length) {
@@ -133,14 +140,12 @@
             let tanggalRapi = item.timestamp;
             if (item.timestamp) {
                 const dateObj = new Date(item.timestamp);
-                if (!isNaN(dateObj)) {
-                    tanggalRapi = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
-                }
+                if (!isNaN(dateObj)) tanggalRapi = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
             }
 
             const statusItem = item.status ? item.status.toLowerCase() : "dipinjam";
             const noImageFallback = "https://dummyimage.com/300x220/cccccc/ffffff.jpg&text=Tidak+Ada+Foto";
-            const errorImageFallback = "https://dummyimage.com/300x220/ffcccc/cc0000.jpg&text=Gagal+Muat+Foto";
+            const errorImageFallback = "https://dummyimage.com/300x220/ffcccc/cc0000.jpg&text=Gagal+Muat";
             
             const fotoPinjamArray = item.foto_preview || [];
             const coverImage = fotoPinjamArray.length > 0 ? fotoPinjamArray[0] : noImageFallback;
@@ -156,18 +161,15 @@
 
             let emailPinjamHtml = (item.email_pinjam && item.email_pinjam !== "-") ? `<br><span class="text-muted" style="font-size: 0.7rem;">${item.email_pinjam}</span>` : "";
             let emailKembaliHtml = (item.email_kembali && item.email_kembali !== "-") ? `<br><span class="text-muted" style="font-size: 0.7rem;">${item.email_kembali}</span>` : "";
-
-            // ==========================================
-            // LOGIKA PEWARNAAN KONDISI BARANG
-            // ==========================================
-            let kondisiText = item.kondisi || '-';
-            let kondisiColor = "text-secondary"; // Warna default (abu)
             
-            if (kondisiText.toUpperCase() === "BAIK" || kondisiText.toUpperCase() === "AMAN") {
-                kondisiColor = "text-success"; // Hijau
-            } else if (kondisiText.toUpperCase().includes("KURANG") || kondisiText.toUpperCase().includes("RUSAK")) {
-                kondisiColor = "text-danger"; // Merah
-            }
+            // Format Badge ID
+            let idOtomatisHtml = `<span class="badge bg-secondary mb-2 px-2 py-2 ms-1">${item.id_peminjaman || '-'}</span>`;
+
+            // Proses Kondisi Barang Kolom Kiri & Kanan
+            let kondisiPinjam = item.kondisi_pinjam || '-';
+            let kondisiKembali = item.kondisi_kembali || '-';
+            let colorPinjam = getKondisiColor(kondisiPinjam);
+            let colorKembali = getKondisiColor(kondisiKembali);
 
             let statusBadge = '';
             let detailPerbandingan = '';
@@ -183,7 +185,7 @@
 
                 let alertSinkron = '';
                 if (item.status_sinkron === 'Tidak Sesuai') {
-                    alertSinkron = `<div class="col-12 mt-2"><div class="alert alert-warning py-2 px-3 mb-0" style="font-size: 0.8rem;"><b>⚠️ TIDAK SINKRON:</b><br> Daftar barang yang dikembalikan tidak sama dengan yang dipinjam.</div></div>`;
+                    alertSinkron = `<div class="col-12 mt-2"><div class="alert alert-warning py-2 px-3 mb-0" style="font-size: 0.8rem;"><b>⚠️ TIDAK SINKRON:</b><br> Item yang dikembalikan berbeda dengan saat dipinjam.</div></div>`;
                 }
 
                 let fotoKembaliHtml = '';
@@ -192,39 +194,39 @@
                     fotoKembaliHtml = `<div class="mt-2 text-center"><p class="mb-1 text-success" style="font-size: 0.75rem;"><b>BUKTI FOTO KEMBALI:</b></p><div class="d-flex flex-wrap justify-content-center gap-2">`;
                     fotoKembaliArray.forEach((f, idx) => {
                         let widthStyle = fotoKembaliArray.length === 1 ? '100%' : '45%';
-                        let heightStyle = fotoKembaliArray.length === 1 ? '180px' : '90px';
-                        fotoKembaliHtml += `<img src="${f}" class="img-fluid rounded border border-success zoomable-image" style="height: ${heightStyle}; width: ${widthStyle}; object-fit: cover;" onerror="this.style.display='none'" onclick="zoomImage('${f}', 'Bukti Pengembalian ${idx+1}: ${item.nama_pengembali}')">`;
+                        fotoKembaliHtml += `<img src="${f}" class="img-fluid rounded border border-success zoomable-image" style="height: 120px; width: ${widthStyle}; object-fit: cover;" onerror="this.onerror=null; this.src='${errorImageFallback}'" onclick="zoomImage('${f}', 'Bukti Pengembalian')">`;
                     });
                     fotoKembaliHtml += `</div></div>`;
                 }
 
+                // Kotak Kiri: Kondisi Barang (Pinjam) | Kotak Kanan: Kondisi Barang (Kembali)
                 detailPerbandingan = `
                 <div class="row mt-3 p-2 bg-light rounded border mx-0">
                     <div class="col-6 border-end px-2">
                         <p class="mb-1 text-primary" style="font-size: 0.75rem;"><b>INPUT PINJAM</b></p>
                         <p class="mb-2 lh-sm"><small><b>Oleh:</b><br>${item.nama_dosen}${emailPinjamHtml}</small></p>
-                        <p class="mb-2 lh-sm"><small><b>Tgl Pinjam:</b><br>${tanggalRapi}</small></p>
-                        <p class="mb-0 lh-sm text-primary"><small><b>Barang Pinjam:</b><br>${item.barang}</small></p>
+                        <p class="mb-2 lh-sm"><small><b>Waktu:</b><br>${tanggalRapi}</small></p>
+                        <p class="mb-2 lh-sm text-primary"><small><b>Barang:</b><br>${item.barang}</small></p>
+                        <p class="mb-0 lh-sm"><small><b>Kondisi Barang:</b><br><span class="${colorPinjam} fw-bold">${kondisiPinjam}</span></small></p>
                     </div>
                     <div class="col-6 px-2">
                         <p class="mb-1 text-success" style="font-size: 0.75rem;"><b>INPUT KEMBALI</b></p>
                         <p class="mb-2 lh-sm"><small><b>Oleh:</b><br>${item.nama_pengembali}${emailKembaliHtml}</small></p>
-                        <p class="mb-2 lh-sm"><small><b>Tgl Kembali:</b><br>${tglKembaliRapi}</small></p>
-                        <p class="mb-0 lh-sm text-success"><small><b>Barang Kembali:</b><br>${item.barang_kembali || '-'}</small></p>
+                        <p class="mb-2 lh-sm"><small><b>Waktu:</b><br>${tglKembaliRapi}</small></p>
+                        <p class="mb-2 lh-sm text-success"><small><b>Barang:</b><br>${item.barang_kembali || '-'}</small></p>
+                        <p class="mb-0 lh-sm"><small><b>Kondisi Barang:</b><br><span class="${colorKembali} fw-bold">${kondisiKembali}</span></small></p>
                     </div>
                     ${alertSinkron}
-                    <div class="col-12 border-top mt-3 pt-2 px-2">
-                        <p class="mb-0 lh-sm"><small><b>Kondisi Barang:</b> <span class="${kondisiColor} fw-bold">${kondisiText}</span></small></p>
-                        ${fotoKembaliHtml}
-                    </div>
+                    ${fotoKembaliHtml ? `<div class="col-12 border-top mt-3 pt-2 px-2">${fotoKembaliHtml}</div>` : ''}
                 </div>
                 `;
             } else {
                 statusBadge = `<span class="badge badge-pinjam mb-2 px-3 py-2">⏳ Dipinjam</span>`;
                 detailPerbandingan = `
-                <div class="mt-3">
+                <div class="mt-3 bg-light p-2 rounded border">
                     <p class="mb-1 lh-sm"><small><b>Peminjam :</b><br>${item.nama_dosen || '-'}${emailPinjamHtml}</small></p>
                     <p class="mb-1 lh-sm"><small><b>Tgl Pinjam :</b><br>${tanggalRapi}</small></p>
+                    <p class="mb-0 lh-sm mt-2 pt-2 border-top"><small><b>Kondisi Barang :</b> <span class="${colorPinjam} fw-bold">${kondisiPinjam}</span></small></p>
                 </div>
                 `;
             }
@@ -232,11 +234,10 @@
             container.innerHTML += `
             <div class="col-md-4 mb-4">
                 <div class="card card-barang shadow h-100">
-                    <img src="${coverImage}" class="card-img-top zoomable-image" alt="${item.barang || 'Barang'}" onerror="this.onerror=null; this.src='${errorImageFallback}'" onclick="zoomImage('${coverImage}', 'Foto Pinjam Utama')">
-                    
+                    <img src="${coverImage}" class="card-img-top zoomable-image" alt="Foto Barang" onerror="this.onerror=null; this.src='${errorImageFallback}'" onclick="zoomImage('${coverImage}', 'Foto Peminjaman')">
                     <div class="card-body pb-2">
                         ${extraPinjamHtml}
-                        <div class="mt-2">${statusBadge}</div>
+                        <div class="mt-2">${statusBadge} ${idOtomatisHtml}</div>
                         <h6 class="card-title fw-bold mt-2 lh-base">${item.barang || '-'}</h6>
                         <p class="mb-1 mt-2 lh-sm"><small><b>Keterangan (Acara) :</b><br>${item.keterangan || '-'}</small></p>
                         ${detailPerbandingan}
@@ -254,12 +255,10 @@
         const hasil = semuaData.filter(item => {
             const barang = (item.barang || "").toLowerCase();
             const dosen = (item.nama_dosen || "").toLowerCase();
-            const dosenKembali = (item.nama_pengembali || "").toLowerCase();
             const statusItem = (item.status || "").toLowerCase();
-            const emailP = (item.email_pinjam || "").toLowerCase();
-            const emailK = (item.email_kembali || "").toLowerCase();
+            const idP = (item.id_peminjaman || "").toLowerCase();
             
-            const matchKeyword = barang.includes(keyword) || dosen.includes(keyword) || dosenKembali.includes(keyword) || emailP.includes(keyword) || emailK.includes(keyword);
+            const matchKeyword = barang.includes(keyword) || dosen.includes(keyword) || idP.includes(keyword);
             const matchStatus = statusVal === "" || statusItem === statusVal;
 
             return matchKeyword && matchStatus;
