@@ -69,7 +69,6 @@
     <div class="footer">FAKULTAS DESAIN UNIKOM &copy; 2026</div>
 </div>
 
-<!-- Modal Gambar -->
 <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -118,12 +117,15 @@
         document.getElementById("totalKembali").innerText = kembali;
     }
 
-    // Fungsi warna dinamis untuk kondisi barang
+    // Fungsi warna dinamis: Pengecekan kata RUSAK/KURANG diletakkan paling atas
     function getKondisiColor(teks) {
         if (!teks || teks === '-') return 'text-secondary';
         const t = teks.toUpperCase();
+        
+        // Pengecekan ini diutamakan agar "KURANG BAIK" dibaca sebagai KURANG, bukan BAIK
+        if (t.includes('KURANG') || t.includes('RUSAK') || t.includes('ERROR')) return 'text-danger'; 
         if (t.includes('BAIK') || t.includes('AMAN')) return 'text-success';
-        if (t.includes('KURANG') || t.includes('RUSAK') || t.includes('ERROR')) return 'text-danger';
+        
         return 'text-warning';
     }
 
@@ -162,10 +164,9 @@
             let emailPinjamHtml = (item.email_pinjam && item.email_pinjam !== "-") ? `<br><span class="text-muted" style="font-size: 0.7rem;">${item.email_pinjam}</span>` : "";
             let emailKembaliHtml = (item.email_kembali && item.email_kembali !== "-") ? `<br><span class="text-muted" style="font-size: 0.7rem;">${item.email_kembali}</span>` : "";
             
-            // Format Badge ID
             let idOtomatisHtml = `<span class="badge bg-secondary mb-2 px-2 py-2 ms-1">${item.id_peminjaman || '-'}</span>`;
 
-            // Proses Kondisi Barang Kolom Kiri & Kanan
+            // Proses Warna
             let kondisiPinjam = item.kondisi_pinjam || '-';
             let kondisiKembali = item.kondisi_kembali || '-';
             let colorPinjam = getKondisiColor(kondisiPinjam);
@@ -199,7 +200,6 @@
                     fotoKembaliHtml += `</div></div>`;
                 }
 
-                // Kotak Kiri: Kondisi Barang (Pinjam) | Kotak Kanan: Kondisi Barang (Kembali)
                 detailPerbandingan = `
                 <div class="row mt-3 p-2 bg-light rounded border mx-0">
                     <div class="col-6 border-end px-2">
